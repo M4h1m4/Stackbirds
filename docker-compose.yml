@@ -1,0 +1,68 @@
+# One-command run: docker compose up -d
+# Then open http://localhost:8000 (frontend + API).
+# Create .env from .env.example and set OPENAI_API_KEY (and IMAP_* if using email).
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - SERVE_FRONTEND=1
+      - SQLITE_PATH=/data/jobs.db
+      - MONGODB_URI=mongodb://mongodb:27017
+      - MONGODB_DB=stackbirds
+      - BASE_URL=http://localhost:8000
+    env_file:
+      - .env
+    volumes:
+      - app_data:/data
+      - ./data:/app/data
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Email poller: processes inbox and creates invoices (set IMAP_* in .env)
+  poller:
+    build: .
+    command: ["python", "-m", "backend.ingestion.email_poller", "--loop", "--interval", "300"]
+    environment:
+      - SQLITE_PATH=/data/jobs.db
+      - MONGODB_URI=mongodb://mongodb:27017
+      - MONGODB_DB=stackbirds
+      - BASE_URL=http://localhost:8000
+    env_file:
+      - .env
+    volumes:
+      - app_data:/data
+      - ./data:/app/data
+    depends_on:
+      app:
+        condition: service_started
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  app_data:
+  mongodb_data:

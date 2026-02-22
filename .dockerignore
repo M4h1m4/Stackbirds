@@ -1,0 +1,31 @@
+# Git and IDE
+.git
+.gitignore
+.cursor
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+node_modules
+
+# Env and secrets (mount at run time)
+.env
+.env.*
+!.env.example
+
+# Frontend dev (we build in Docker)
+frontend/node_modules
+frontend/dist
+
+# Data and docs (mount data at run time; do not bundle in image)
+data/
+docs/
+
+# Other
+*.md
+!README.md
+
+# Tests (exclude to shrink image)
+tests/
