@@ -9,7 +9,7 @@ An invoice processing application that takes invoices from your email inbox, ext
 - **Vendor and price checks** — The system checks vendor match first, then line-item mapping, then unit prices. If any line’s unit price varies more than a configurable threshold (default 10%) from the contracted price, the invoice is FLAGGED for human review unless you explicitly approve in clarification.
 - **Web UI** — React frontend to enter your inbox email, view processings, see extraction and matching, answer clarification questions, and view the final decision and reconciliation report.
 - **Audit trail** — Full trail including LLM reasoning from extraction, matching, and completion.
-- **Docker** — Single image for API + frontend; optional email poller in the same image. Run the full stack with Docker Compose (app + MongoDB + poller).
+- **Docker** — Single image for API + frontend; optional email poller in the same image. Run the full stack with Docker Compose (app + MongoDB + poller). Image: [Docker Hub — m4h1m416/invoiceapproverbot](https://hub.docker.com/r/m4h1m416/invoiceapproverbot).
 
 ## Tech stack
 
@@ -32,6 +32,8 @@ An invoice processing application that takes invoices from your email inbox, ext
 You can run the app **with Docker** (recommended) or **locally without Docker**.
 
 ### Run with Docker
+
+**Docker image:** [m4h1m416/invoiceapproverbot](https://hub.docker.com/r/m4h1m416/invoiceapproverbot) on Docker Hub.
 
 You need **Docker** and **Docker Compose**. The stack runs the app, MongoDB, and an optional email poller.
 
@@ -62,9 +64,9 @@ The `docker-compose.yml` in this repo **builds the image** from source. It start
 - **mongodb** — MongoDB on port 27017
 - **poller** — Email poller (every 5 minutes) if `IMAP_*` is set in `.env`
 
-**Using a pre-built image from Docker Hub**
+**Using the pre-built image from Docker Hub**
 
-A pre-built image is available as **m4h1m416/invoiceapproverbot** (https://hub.docker.com/r/m4h1m416/invoiceapproverbot). To use it instead of building from source, in `docker-compose.yml` replace `build: .` with `image: m4h1m416/invoiceapproverbot:latest` for both the `app` and `poller` services, then run `docker compose up -d`.
+Pull and use the image [**m4h1m416/invoiceapproverbot**](https://hub.docker.com/r/m4h1m416/invoiceapproverbot) instead of building from source: in `docker-compose.yml` replace `build: .` with `image: m4h1m416/invoiceapproverbot:latest` for both the `app` and `poller` services, then run `docker compose up -d`.
 
 For build-only, push, and deployment details, see [DOCKER.md](DOCKER.md).
 
