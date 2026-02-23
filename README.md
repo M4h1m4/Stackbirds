@@ -29,43 +29,44 @@ An invoice processing application that takes invoices from your email inbox, ext
 
 ## How to run
 
-The application is **dockerized** and can be run with Docker or Docker Compose. A pre-built image is available on **Docker Hub**:
+You can run the app **with Docker** (recommended) or **locally without Docker**.
 
-- **Docker Hub:** The image is published as **invoiceapproverbot** (lowercase). Image link:  
-  **https://hub.docker.com/r/m4h1m416/invoiceapproverbot**
+### Run with Docker
 
-### Option A: Run from Docker Hub (pull image)
+You need **Docker** and **Docker Compose**. The stack runs the app, MongoDB, and an optional email poller.
 
-If you have Docker and Docker Compose, create a folder with a `docker-compose.yml` that uses the image and a `.env` file, then start the stack:
-
-```bash
-# Create a directory and .env (see .env.example in the repo for variables)
-mkdir invoice-processor && cd invoice-processor
-# Copy docker-compose.yml from the repo or use one that references the image:
-# image: invoiceapproverbot/invoiceapproverbot:latest  (or your-username/invoiceapproverbot:latest)
-cp .env.example .env
-# Edit .env: OPENAI_API_KEY and IMAP_HOST, IMAP_USER, IMAP_PASSWORD
-
-docker compose up -d
-```
-
-Then open **http://localhost:8000** and enter your inbox email to see processings.
-
-### Option B: Build and run from source
+**1. Clone the repo and set environment**
 
 ```bash
 git clone <repository-url>
 cd <project-directory>
 
 cp .env.example .env
-# Edit .env: set OPENAI_API_KEY and IMAP_HOST, IMAP_USER, IMAP_PASSWORD (for inbox polling)
+# Edit .env: set OPENAI_API_KEY (required) and IMAP_HOST, IMAP_USER, IMAP_PASSWORD (for inbox polling)
+```
 
+**2. Start the stack**
+
+```bash
 docker compose up -d
 ```
 
-Then open **http://localhost:8000**, enter the email address that receives invoice emails, and click **Load** to see processings.
+**3. Open the app**
 
-For more (build only, push to Docker Hub, customer deployment), see [DOCKER.md](DOCKER.md).
+- Open **http://localhost:8000** in your browser.
+- Enter the email address that receives invoice emails and click **Load** to see processings.
+
+The `docker-compose.yml` in this repo **builds the image** from source. It starts:
+
+- **app** — API + frontend on port 8000
+- **mongodb** — MongoDB on port 27017
+- **poller** — Email poller (every 5 minutes) if `IMAP_*` is set in `.env`
+
+**Using a pre-built image from Docker Hub**
+
+A pre-built image is available as **m4h1m416/invoiceapproverbot** (https://hub.docker.com/r/m4h1m416/invoiceapproverbot). To use it instead of building from source, in `docker-compose.yml` replace `build: .` with `image: m4h1m416/invoiceapproverbot:latest` for both the `app` and `poller` services, then run `docker compose up -d`.
+
+For build-only, push, and deployment details, see [DOCKER.md](DOCKER.md).
 
 ## Running locally (without Docker)
 
