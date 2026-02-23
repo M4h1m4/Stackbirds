@@ -29,6 +29,7 @@ data/jobs.db
 
 # Docs (design and plans)
 docs/
+assessment_text.txt
 
 # Node / frontend
 node_modules/
