@@ -8,6 +8,7 @@ import {
   submitClarification,
   getCompletion,
 } from '../api';
+import PhaseProgressBar from '../components/PhaseProgressBar';
 import styles from './ProcessingDetail.module.css';
 
 function isStateObject(s) {
@@ -171,8 +172,8 @@ export default function ProcessingDetail() {
     <div className={styles.page}>
       <header className={styles.header}>
         <Link to={listEmail ? (inboxEmail ? `/processing?inbox_email=${encodeURIComponent(listEmail)}` : `/processing?customer_id=${encodeURIComponent(listEmail)}`) : '/processing'} className={styles.back}>← Back to list</Link>
-        <h1>Processing: {processing?.invoice_id}</h1>
-        <p className={styles.phase}>Phase: <strong>{phase}</strong></p>
+        <h1 className={styles.title}>Processing: {processing?.invoice_id}</h1>
+        <PhaseProgressBar currentPhase={phase} />
       </header>
 
       {extractionState && (
@@ -266,9 +267,17 @@ export default function ProcessingDetail() {
           <h2>Completion</h2>
           {completion ? (
             <>
-              <p className={styles.decision}>
-                Result: <strong>{formatDecisionResult(completion.decision_result)}</strong>
-              </p>
+              <div className={styles.decisionWrap}>
+                <span className={styles.decisionLabel}>Result</span>
+                <span className={`${styles.decisionBadge} ${formatDecisionResult(completion.decision_result) === 'APPROVED' ? styles.decisionBadgeApproved : formatDecisionResult(completion.decision_result) === 'FLAGGED' ? styles.decisionBadgeFlagged : styles.decisionBadgeNeutral}`}>
+                  {formatDecisionResult(completion.decision_result)}
+                </span>
+                {completion.decision_result && typeof completion.decision_result === 'object' && completion.decision_result.vendor_match_confidence != null && (
+                  <span className={styles.confidence}>
+                    Vendor match confidence: <strong>{Math.round(Number(completion.decision_result.vendor_match_confidence) * 100)}%</strong>
+                  </span>
+                )}
+              </div>
               {completion.decision_result && typeof completion.decision_result === 'object' && completion.decision_result.reasoning && (
                 <p className={styles.reasoning}>{completion.decision_result.reasoning}</p>
               )}
@@ -279,6 +288,64 @@ export default function ProcessingDetail() {
                     <pre className={styles.reportText}>{completion.reconciliation_report}</pre>
                   ) : (
                     <pre className={styles.reportText}>{safeStringify(completion.reconciliation_report)}</pre>
+                  )}
+                </div>
+              )}
+              {completion.audit_trail != null && (
+                <div className={styles.auditTrail}>
+                  <h3>Audit trail</h3>
+                  {typeof completion.audit_trail === 'string' ? (
+                    <pre className={styles.auditText}>{completion.audit_trail}</pre>
+                  ) : (
+                    <>
+                      {completion.audit_trail.extracted != null && (
+                        <div className={styles.auditBlock}>
+                          <h4 className={styles.auditSubhead}>Extracted</h4>
+                          <pre className={styles.auditText}>{safeStringify(completion.audit_trail.extracted)}</pre>
+                        </div>
+                      )}
+                      {(completion.audit_trail.assumptions || []).length > 0 && (
+                        <div className={styles.auditBlock}>
+                          <h4 className={styles.auditSubhead}>Assumptions</h4>
+                          <ul className={styles.auditList}>
+                            {completion.audit_trail.assumptions.map((a, i) => (
+                              <li key={i}>{a}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {(completion.audit_trail.uncertainties || []).length > 0 && (
+                        <div className={styles.auditBlock}>
+                          <h4 className={styles.auditSubhead}>Uncertainties</h4>
+                          <ul className={styles.auditList}>
+                            {completion.audit_trail.uncertainties.map((u, i) => (
+                              <li key={i}>{u}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {completion.audit_trail.decision_reasoning && (
+                        <div className={styles.auditBlock}>
+                          <h4 className={styles.auditSubhead}>Decision reasoning</h4>
+                          <p className={styles.auditText}>{completion.audit_trail.decision_reasoning}</p>
+                        </div>
+                      )}
+                      {(completion.audit_trail.llm_thoughts || []).length > 0 && (
+                        <div className={styles.auditBlock}>
+                          <h4 className={styles.auditSubhead}>LLM thoughts</h4>
+                          <div className={styles.llmThoughts}>
+                            {completion.audit_trail.llm_thoughts.map((entry, i) => (
+                              <div key={i} className={styles.llmEntry}>
+                                <span className={styles.llmPhase}>{entry.phase}{entry.step ? ` — ${entry.step}` : ''}</span>
+                                {entry.thoughts && <pre className={styles.llmThoughtText}>{entry.thoughts}</pre>}
+                                {entry.input_summary && <p className={styles.llmMeta}>Input: {entry.input_summary}</p>}
+                                {entry.output_summary && <p className={styles.llmMeta}>Output: {entry.output_summary}</p>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}

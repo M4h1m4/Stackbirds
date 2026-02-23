@@ -119,6 +119,15 @@ _INVOICE_TITLE_PATTERNS = re.compile(
     r"(\s*#?\s*[\w-]*)?\s*$",
     re.I,
 )
+# Line that *starts with* a title (so we skip "Invoice from Acme" as vendor; we use Acme from content)
+_INVOICE_TITLE_PREFIX = re.compile(
+    r"^(invoice|tax\s+invoice|bill|quote|purchase\s+order|po\s*#?|receipt|statement)\s*",
+    re.I,
+)
+# Words that indicate the rest of a title line is document-type text, not a vendor name
+_NON_VENDOR_TITLE_WORDS = frozenset(
+    {"copy", "scanned", "ocr", "type", "pdf", "image", "attachment", "messy", "scanned)"}
+)
 
 
 def _is_invoice_title_line(line: str) -> bool:
@@ -135,11 +144,46 @@ def _is_invoice_title_line(line: str) -> bool:
     return False
 
 
+def _line_starts_with_invoice_title(line: str) -> bool:
+    """True if line starts with a document title (e.g. 'Invoice', 'Tax Invoice'), even if more text follows."""
+    return bool(_INVOICE_TITLE_PREFIX.match(line.strip()))
+
+
+def _vendor_after_title_prefix(line: str) -> Optional[str]:
+    """
+    If line is like 'Invoice from Acme Corp' or 'Tax Invoice - Acme', return the vendor part (Acme Corp / Acme).
+    Return None for title-only text (e.g. 'Invoice Copy (Scanned)') so we use the next line from invoice body.
+    """
+    s = line.strip()
+    m = _INVOICE_TITLE_PREFIX.match(s)
+    if not m:
+        return None
+    rest = s[m.end() :].strip()
+    # Strip common separators: "from Acme" -> "Acme", " - Acme" -> "Acme", "#123 from Acme" -> "Acme"
+    rest = re.sub(r"^[#\d\s\-]+", "", rest).strip()
+    # Strip leading "from " / "from:" so "from Acme Corp" -> "Acme Corp"
+    rest = re.sub(r"^from\s*:?\s*", "", rest, flags=re.I).strip()
+    for sep in (" from ", " - ", ": ", " – "):
+        if sep in rest:
+            rest = rest.split(sep, 1)[-1].strip()
+            break
+    if not rest or _is_invoice_title_line(rest) or re.match(r"^[\d\s\$\.,]+$", rest) or len(rest) < 2:
+        return None
+    # Reject document-type fragments (e.g. "Copy (Scanned)", "Type 2", "Messy OCR") — not vendor names
+    rest_lower = rest.lower()
+    words = set(re.findall(r"[a-z]+", rest_lower))
+    if words and words <= _NON_VENDOR_TITLE_WORDS:
+        return None
+    if rest_lower in _NON_VENDOR_TITLE_WORDS or any(rest_lower == w for w in _NON_VENDOR_TITLE_WORDS):
+        return None
+    return rest
+
+
 def _infer_vendor_from_text(text: str) -> str:
     """
     Read vendor name from the invoice body, not from the document title.
     Prefers lines after labels like From:, Vendor:, Bill From:, Seller:.
-    Skips document titles (INVOICE, TAX INVOICE, BILL, etc.).
+    Skips document titles (INVOICE, TAX INVOICE, BILL, etc.). Never uses the title line itself as vendor.
     """
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     # 1) Look for label lines: "From: Acme Corp", "Vendor:", "Bill From:", "Seller:", etc.
@@ -159,9 +203,20 @@ def _infer_vendor_from_text(text: str) -> str:
                 if cand and not _is_invoice_title_line(cand) and not re.match(r"^[\d\s\$\.,]+$", cand):
                     return cand
             break
-    # 2) First substantive line that is not a document title
+    # 2) Vendor from a line that starts with title but has content (e.g. "Invoice from Acme Corp")
     for line in lines:
-        if len(line) > 2 and not _is_invoice_title_line(line) and not re.match(r"^[\d\s\$\.,]+$", line):
+        if _line_starts_with_invoice_title(line):
+            candidate = _vendor_after_title_prefix(line)
+            if candidate:
+                return candidate
+    # 3) First substantive line that is not a document title and does not start with a title
+    for line in lines:
+        if (
+            len(line) > 2
+            and not _is_invoice_title_line(line)
+            and not _line_starts_with_invoice_title(line)
+            and not re.match(r"^[\d\s\$\.,]+$", line)
+        ):
             return line
     return "Unknown Vendor"
 

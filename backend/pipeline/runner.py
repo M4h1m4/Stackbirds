@@ -145,6 +145,7 @@ def run_pipeline(session: Session, processing_id: str) -> Optional[str]:
         extraction,
         context,
         clarification_qa=None,
+        max_clarification_questions=3,
     )
     _append_thought(audit, match_thought)
     if match_questions:
@@ -265,11 +266,14 @@ def run_pipeline_after_clarify(session: Session, processing_id: str, clarificati
         matching_state_id = f"matching_{uuid.uuid4().hex[:12]}"
         context = load_excel_context()
         clarification_qa = clar.answers if isinstance(clar.answers, list) else []
+        total_asked = len(clarification_qa)
+        max_questions = max(0, 3 - total_asked)
         matching, match_questions, match_thought = get_matching(
             matching_state_id,
             extraction,
             context,
             clarification_qa=clarification_qa,
+            max_clarification_questions=max_questions,
         )
         audit = proc.audit_trail or _initial_audit_trail(extraction)
         if isinstance(audit, dict):

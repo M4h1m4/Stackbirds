@@ -76,7 +76,7 @@ def get_decision_and_report(
     variance_pct = get_config().variance_threshold * 100.0
     system_prompt = _system_completion(variance_pct)
 
-    user = f"""Extracted invoice:
+    user = f"""Extracted invoice (invoice total = subtotal + tax + shipping):
 - Vendor: {extraction.vendor_name}
 - Total: {extraction.total_invoice_price}
 - Items: {len(extraction.items)}

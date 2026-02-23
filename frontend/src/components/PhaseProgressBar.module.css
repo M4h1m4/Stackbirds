@@ -1,0 +1,109 @@
+.wrapper {
+  margin-bottom: 2rem;
+}
+
+.barTrack {
+  height: 10px;
+  background: var(--progress-track, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--progress-start, #6366f1) 0%,
+    var(--progress-mid, #8b5cf6) 50%,
+    var(--progress-end, #a855f7) 100%
+  );
+  background-size: 200% 100%;
+  animation: progressShine 2s ease-in-out infinite;
+  transition: width 0.5s ease-out;
+}
+
+@keyframes progressShine {
+  0%, 100% { background-position: 100% 0; }
+  50% { background-position: 0 0; }
+}
+
+.steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.stepActive {
+  opacity: 1;
+}
+
+.stepCurrent .stepDot {
+  transform: scale(1.35);
+  box-shadow: 0 0 0 4px var(--progress-current-ring, rgba(139, 92, 246, 0.4));
+}
+
+.stepCurrent .stepLabel {
+  font-weight: 700;
+  color: var(--progress-current-text, #a855f7);
+}
+
+.stepDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--progress-track, rgba(255, 255, 255, 0.2));
+  transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stepActive .stepDot {
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+}
+
+.stepLabel {
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: inherit;
+}
+
+.phaseName {
+  font-size: 0.95rem;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.phaseName strong {
+  color: var(--progress-current-text, #a855f7);
+}
+
+@media (prefers-color-scheme: light) {
+  .barTrack {
+    background: rgba(0, 0, 0, 0.08);
+  }
+  .stepDot {
+    background: rgba(0, 0, 0, 0.15);
+  }
+  .stepActive .stepDot {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  }
+  .stepCurrent .stepLabel {
+    color: #6d28d9;
+  }
+  .phaseName strong {
+    color: #6d28d9;
+  }
+}
